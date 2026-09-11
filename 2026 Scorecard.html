@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #FDEDF3;
+    --surface: #FFFFFF;
+    --pink-deep: #E8749F;
+    --berry: #C4487A;
+    --onaccent: #FFFFFF;
+    --text: #4A2C3A;
+    --line: rgba(74,44,58,0.12);
+    --line-strong: rgba(74,44,58,0.22);
+    --text-dim: rgba(74,44,58,0.58);
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; background: var(--bg); }
+  body{ font-family: 'Fraunces', serif; color: var(--text); -webkit-font-smoothing: antialiased; }
+  .wrap{ max-width: 480px; margin: 0 auto; padding: 26px 18px 60px; }
+
+  .top h1{ font-size: 23px; font-weight: 500; margin: 0 0 12px; }
+
+  .xp-row{ display:flex; align-items:center; gap: 10px; margin-bottom: 6px; }
+  .level-badge{
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--pink-deep);
+    color: var(--onaccent); padding: 3px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap;
+  }
+  .xp-bar-track{ flex: 1; height: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .xp-bar-fill{ height: 100%; background: var(--pink-deep); border-radius: 4px; transition: width 0.4s ease; }
+  .xp-text{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+  .streak-line{ font-size: 13px; color: var(--text-dim); margin: 10px 0 20px; }
+  .streak-line strong{ color: var(--berry); font-weight: 600; }
+
+  .badges-row{ display:flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  .badge{
+    font-size: 11px; font-family: 'IBM Plex Mono', monospace; padding: 5px 9px; border-radius: 6px;
+    border: 1px solid var(--line-strong); color: var(--text-dim); background: var(--surface);
+  }
+  .badge.earned{ border-color: var(--pink-deep); color: var(--pink-deep); background: rgba(232,116,159,0.10); }
+
+  .tabs{ display:flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .tab{
+    flex:1; text-align:center; padding: 9px 0; font-size: 14px; color: var(--text-dim);
+    cursor: pointer; border-bottom: 2px solid transparent; font-family: 'IBM Plex Mono', monospace;
+  }
+  .tab.active{ color: var(--text); border-bottom: 2px solid var(--pink-deep); }
+
+  .targets{ display:flex; gap: 12px; flex-wrap: wrap; margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-dim); align-items: center; }
+  .targets span{ white-space: nowrap; }
+  .targets b{ color: var(--text); }
+  .edit-targets{
+    background: var(--surface); border: 1px solid var(--line-strong); color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 4px 8px; border-radius: 4px;
+    cursor: pointer; margin-left: auto;
+  }
+
+  .settings-panel{ background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 20px; display: none; }
+  .settings-panel.open{ display: block; }
+  .settings-row{ display:flex; align-items:center; justify-content: space-between; padding: 6px 0; }
+  .settings-row label{ font-size: 14px; }
+  .settings-row input{
+    width: 60px; background: var(--bg); border: 1px solid var(--line-strong);
+    color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+    text-align: right; padding: 4px 6px; border-radius: 4px;
+  }
+  .settings-save{
+    margin-top: 10px; width: 100%; background: var(--pink-deep); color: var(--onaccent);
+    border: none; padding: 10px; border-radius: 6px; font-family: 'Fraunces', serif;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+
+  .day{ border-top: 1px solid var(--line); padding: 14px 0; }
+  .day:first-of-type{ border-top: 1px solid var(--line-strong); }
+  .day.today{ background: rgba(232,116,159,0.08); margin: 0 -18px; padding: 14px 18px; border-top: 1px solid var(--line-strong); }
+  .day.past-empty{ opacity: 0.55; }
+
+  .day-head{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 10px; }
+  .day-date{ font-size: 15px; }
+  .day-date .tag{ font-size: 11px; color: var(--pink-deep); margin-left: 6px; font-family: 'IBM Plex Mono', monospace; }
+  .day-check{
+    width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line-strong);
+    display:flex; align-items:center; justify-content:center; flex-shrink: 0;
+    transition: transform 0.25s ease; background: var(--surface);
+  }
+  .day-check.done{ background: var(--pink-deep); border-color: var(--pink-deep); }
+  .day-check.pulse{ transform: scale(1.35); }
+  .day-check svg{ width: 11px; height: 11px; stroke: var(--onaccent); stroke-width: 3; fill:none; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+  .day-check.done svg{ opacity: 1; }
+
+  .fields{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+  .field{ display:flex; align-items:center; justify-content: space-between; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+  .field label{ font-size: 12px; color: var(--text-dim); }
+  .field input{
+    width: 40px; background: transparent; border: none; border-bottom: 1px solid var(--line-strong);
+    color: var(--pink-deep); font-family: 'IBM Plex Mono', monospace; font-size: 15px; text-align: right; padding: 1px 0;
+  }
+  .field input:focus{ outline: none; border-bottom-color: var(--pink-deep); }
+  .field.met input{ color: var(--text); border-bottom-color: var(--berry); }
+  .field.met{ border-color: rgba(196,72,122,0.35); }
+
+  .tracker{ margin-top: 36px; border-top: 1px solid var(--line-strong); padding-top: 20px; }
+  .tracker-title{ font-size: 14px; color: var(--text-dim); margin: 0 0 14px; }
+  .tracker-month{ margin-bottom: 14px; }
+  .tracker-month-label{ font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); margin: 0 0 6px; }
+  .tracker-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(20px, 1fr)); gap: 4px; }
+  .tbox{ aspect-ratio: 1; border-radius: 3px; background: var(--surface); border: 1px solid var(--line); }
+
+  .gamify-note{ margin-top: 30px; font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+  .gamify-note b{ color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+const DEFAULT_TARGETS = { re: 2, content: 3, gym: 1.5, acting: 1 };
+const LABELS = { re: 'Real estate', content: 'Content', gym: 'Gym', acting: 'Acting' };
+const CAT_KEYS = ['re','content','gym','acting'];
+const T_STORAGE_KEY = 'scorecard_targets';
+const DATA_PREFIX = 'scorecard_day_';
+const TAB_STORAGE_KEY = 'scorecard_active_tab';
+
+function loadTargets(){
+  try{ const raw = localStorage.getItem(T_STORAGE_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return { ...DEFAULT_TARGETS };
+}
+function saveTargets(t){ try{ localStorage.setItem(T_STORAGE_KEY, JSON.stringify(t)); }catch(e){} }
+
+let TARGETS = loadTargets();
+
+function fmtDate(d){
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function headLabel(d){
+  return `${d.toLocaleDateString(undefined, { weekday: 'short' })} ${d.getDate()}`;
+}
+function loadDay(key){
+  try{ const raw = localStorage.getItem(DATA_PREFIX + key); if(raw) return JSON.parse(raw); }catch(e){}
+  return { re:0, content:0, gym:0, acting:0 };
+}
+function saveDay(key, entry){ try{ localStorage.setItem(DATA_PREFIX + key, JSON.stringify(entry)); }catch(e){} }
+
+const today = new Date();
+today.setHours(0,0,0,0);
+const YEAR = today.getFullYear();
+const CURRENT_MONTH = today.getMonth();
+
+const MONTHS = [];
+for(let m = CURRENT_MONTH; m <= 11; m++){ MONTHS.push(m); }
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function daysInMonth(m){ return new Date(YEAR, m+1, 0).getDate(); }
+function datesForMonth(m){
+  const start = (m === CURRENT_MONTH) ? today.getDate() : 1;
+  const end = daysInMonth(m);
+  const arr = [];
+  for(let d = start; d <= end; d++) arr.push(new Date(YEAR, m, d));
+  return arr;
+}
+
+let data = {};
+MONTHS.forEach(m => {
+  const end = daysInMonth(m);
+  for(let d = 1; d <= end; d++){
+    const key = fmtDate(new Date(YEAR, m, d));
+    data[key] = loadDay(key);
+  }
+});
+
+function metCount(entry){
+  let c = 0;
+  CAT_KEYS.forEach(k => { if((entry[k]||0) >= TARGETS[k]) c++; });
+  return c;
+}
+function isFullDay(entry){ return metCount(entry) === 4; }
+
+function computeXP(){
+  let xp = 0;
+  Object.keys(data).forEach(key => {
+    const d = new Date(key + 'T00:00:00');
+    if(d > today) return;
+    const entry = data[key];
+    const c = metCount(entry);
+    xp += c * 10;
+    if(c === 4) xp += 15;
+  });
+  return xp;
+}
+function levelFromXP(xp){ return Math.floor(xp / 150) + 1; }
+
+function computeStreak(){
+  let streak = 0;
+  let cursor = new Date(today);
+  const todayEntry = data[fmtDate(today)];
+  if(isFullDay(todayEntry)){ streak = 1; cursor.setDate(cursor.getDate()-1); }
+  else { cursor.setDate(cursor.getDate()-1); }
+  for(let i=0;i<200;i++){
+    const key = fmtDate(cursor);
+    const entry = data[key];
+    if(entry && isFullDay(entry)){ streak++; cursor.setDate(cursor.getDate()-1); }
+    else break;
+  }
+  return streak;
+}
+
+function longestStreak(){
+  const allKeys = Object.keys(data).sort();
+  let longest = 0, current = 0;
+  allKeys.forEach(key => {
+    const d = new Date(key + 'T00:00:00');
+    if(d > today) return;
+    if(isFullDay(data[key])){ current++; longest = Math.max(longest, current); }
+    else current = 0;
+  });
+  return longest;
+}
+
+function fullDaysCount(){
+  return Object.keys(data).filter(key => {
+    const d = new Date(key + 'T00:00:00');
+    return d <= today && isFullDay(data[key]);
+  }).length;
+}
+
+const BADGES = [
+  { id: 'spark', name: '3-Day Spark', test: () => longestStreak() >= 3 },
+  { id: 'week', name: 'Week Warrior', test: () => longestStreak() >= 7 },
+  { id: 'fortnight', name: 'Iron Fortnight', test: () => longestStreak() >= 14 },
+  { id: 'month', name: 'Consistency King', test: () => longestStreak() >= 30 },
+  { id: 'tendays', name: '10 Full Days', test: () => fullDaysCount() >= 10 },
+  { id: 'fifty', name: '50 Full Days', test: () => fullDaysCount() >= 50 },
+];
+
+let activeMonth = (() => {
+  try{
+    const saved = parseInt(localStorage.getItem(TAB_STORAGE_KEY), 10);
+    if(MONTHS.includes(saved)) return saved;
+  }catch(e){}
+  return CURRENT_MONTH;
+})();
+
+function render(){
+  const app = document.getElementById('app');
+  const xp = computeXP();
+  const level = levelFromXP(xp);
+  const xpIntoLevel = xp % 150;
+  const xpPct = Math.round((xpIntoLevel/150)*100);
+  const streak = computeStreak();
+
+  app.innerHTML = `
+    <div class="top">
+      <h1>2026 Scorecard</h1>
+      <div class="xp-row">
+        <span class="level-badge">LVL ${level}</span>
+        <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${xpPct}%"></div></div>
+        <span class="xp-text">${xpIntoLevel}/150 xp</span>
+      </div>
+      <p class="streak-line">${streak > 0 ? `<strong>${streak}-day streak</strong> going — keep it alive.` : `No active streak — today restarts it.`}</p>
+      <div class="badges-row" id="badgesRow"></div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="targets">
+      <span>RE <b>${TARGETS.re}h</b></span>
+      <span>Content <b>${TARGETS.content}h</b></span>
+      <span>Gym <b>${TARGETS.gym}h</b></span>
+      <span>Acting <b>${TARGETS.acting}h</b></span>
+      <button class="edit-targets" id="editBtn">edit targets</button>
+    </div>
+    <div class="settings-panel" id="settingsPanel">
+      ${CAT_KEYS.map(k => `
+        <div class="settings-row">
+          <label>${LABELS[k]} (hours)</label>
+          <input type="number" step="0.5" min="0" id="target_${k}" value="${TARGETS[k]}">
+        </div>
+      `).join('')}
+      <button class="settings-save" id="saveTargets">Save targets</button>
+    </div>
+
+    <div id="days"></div>
+
+    <div class="tracker">
+      <p class="tracker-title">Year tracker — filled box = full day</p>
+      <div id="trackerWrap"></div>
+    </div>
+
+    <div class="gamify-note">
+      <b>Ways to level this up further:</b> a streak-freeze token you can spend to protect a missed day, weekly challenge bonuses (e.g. "hit acting 5/7 days for +50xp"), a "perfect month" badge that only unlocks if every single day hits 4/4, letting XP unlock custom rewards you set for yourself, or a Sunday review screen showing your best and worst category of the week.
+    </div>
+  `;
+
+  const badgesRow = document.getElementById('badgesRow');
+  BADGES.forEach(b => {
+    const earned = b.test();
+    const el = document.createElement('span');
+    el.className = 'badge' + (earned ? ' earned' : '');
+    el.textContent = b.name;
+    badgesRow.appendChild(el);
+  });
+
+  const tabsWrap = document.getElementById('tabs');
+  MONTHS.forEach(m => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (m === activeMonth ? ' active' : '');
+    tab.textContent = MONTH_NAMES[m].slice(0,3);
+    tab.addEventListener('click', () => {
+      activeMonth = m;
+      try{ localStorage.setItem(TAB_STORAGE_KEY, m); }catch(e){}
+      render();
+    });
+    tabsWrap.appendChild(tab);
+  });
+
+  document.getElementById('editBtn').addEventListener('click', () => {
+    document.getElementById('settingsPanel').classList.toggle('open');
+  });
+  document.getElementById('saveTargets').addEventListener('click', () => {
+    CAT_KEYS.forEach(k => {
+      let v = parseFloat(document.getElementById(`target_${k}`).value);
+      if(isNaN(v) || v < 0) v = 0;
+      TARGETS[k] = v;
+    });
+    saveTargets(TARGETS);
+    render();
+  });
+
+  const daysWrap = document.getElementById('days');
+  const dates = datesForMonth(activeMonth);
+  dates.forEach((d) => {
+    const key = fmtDate(d);
+    const entry = data[key];
+    const isToday = fmtDate(d) === fmtDate(today);
+    const done = isFullDay(entry);
+
+    const card = document.createElement('div');
+    card.className = 'day' + (isToday ? ' today' : '');
+    card.innerHTML = `
+      <div class="day-head">
+        <div class="day-date">${headLabel(d)}${isToday ? '<span class="tag">today</span>' : ''}</div>
+        <div class="day-check ${done ? 'done' : ''}" data-daykey="${key}">
+          <svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg>
+        </div>
+      </div>
+      <div class="fields">
+        ${CAT_KEYS.map(k => `
+          <div class="field ${(entry[k]||0) >= TARGETS[k] ? 'met' : ''}">
+            <label>${LABELS[k]}</label>
+            <input type="number" step="0.5" min="0" max="12" value="${entry[k] || ''}" placeholder="0" data-cat="${k}" data-date="${key}">
+          </div>
+        `).join('')}
+      </div>
+    `;
+    daysWrap.appendChild(card);
+  });
+
+  daysWrap.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const cat = e.target.dataset.cat;
+      const key = e.target.dataset.date;
+      let val = parseFloat(e.target.value);
+      if(isNaN(val) || val < 0) val = 0;
+      const wasFullBefore = isFullDay(data[key]);
+      data[key][cat] = val;
+      saveDay(key, data[key]);
+      const nowFull = isFullDay(data[key]);
+      render();
+      if(nowFull && !wasFullBefore){
+        const chk = document.querySelector(`.day-check[data-daykey="${key}"]`);
+        if(chk){
+          chk.classList.add('pulse');
+          setTimeout(() => chk.classList.remove('pulse'), 300);
+        }
+      }
+    });
+  });
+
+  const trackerWrap = document.getElementById('trackerWrap');
+  MONTHS.forEach(m => {
+    const end = daysInMonth(m);
+    const startDay = (m === CURRENT_MONTH) ? today.getDate() : 1;
+    const section = document.createElement('div');
+    section.className = 'tracker-month';
+    section.innerHTML = `<p class="tracker-month-label">${MONTH_NAMES[m]}</p><div class="tracker-grid"></div>`;
+    const grid = section.querySelector('.tracker-grid');
+    for(let d = startDay; d <= end; d++){
+      const key = fmtDate(new Date(YEAR, m, d));
+      const entry = data[key];
+      const c = metCount(entry);
+      const box = document.createElement('div');
+      box.className = 'tbox';
+      box.title = key;
+      if(c > 0){
+        const opacity = 0.3 + (c/4)*0.7;
+        box.style.background = `rgba(232,116,159,${opacity})`;
+        box.style.borderColor = 'rgba(232,116,159,0.4)';
+      }
+      grid.appendChild(box);
+    }
+    trackerWrap.appendChild(section);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
